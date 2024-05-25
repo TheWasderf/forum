@@ -232,6 +232,7 @@ func serveThread(w http.ResponseWriter, r *http.Request) {
         JOIN users u ON t.user_id = u.id 
         WHERE t.id = ?`, threadID).Scan(&thread.ID, &thread.Title, &thread.Description, &thread.Likes, &thread.Dislikes, &username)
     if err != nil {
+        log.Printf("Failed to fetch thread details: %v", err)
         http.Error(w, "Failed to fetch thread", http.StatusInternalServerError)
         return
     }
@@ -239,6 +240,7 @@ func serveThread(w http.ResponseWriter, r *http.Request) {
     // Fetch categories for the thread
     categoryRows, err := db.Query("SELECT c.name FROM categories c JOIN thread_categories tc ON c.id = tc.category_id WHERE tc.thread_id = ?", threadID)
     if err != nil {
+        log.Printf("Failed to fetch categories: %v", err)
         http.Error(w, "Failed to fetch categories", http.StatusInternalServerError)
         return
     }
@@ -248,27 +250,17 @@ func serveThread(w http.ResponseWriter, r *http.Request) {
     for categoryRows.Next() {
         var categoryName string
         if err := categoryRows.Scan(&categoryName); err != nil {
+            log.Printf("Failed to read category %v", err)
             http.Error(w, "Failed to read category data", http.StatusInternalServerError)
             return
         }
         categories = append(categories, categoryName)
     }
 
-    cookie, err := r.Cookie("session_token")
+    // Fetch comments for the thread, including likes and dislikes
+    rows, err := db.Query("SELECT c.id, c.content, u.username, (SELECT COUNT(*) FROM comment_likes cl WHERE cl.comment_id = c.id AND cl.like_type = 1) AS likes, (SELECT COUNT(*) FROM comment_likes cl WHERE cl.comment_id = c.id AND cl.like_type = -1) AS dislikes FROM comments c JOIN users u ON u.id = c.user_id WHERE c.thread_id = ?", threadID)
     if err != nil {
-        http.Error(w, "Failed to retrieve session data", http.StatusInternalServerError)
-        return
-    }
-    
-    username, _, err = getUserFromSession(cookie.Value) // Ignore userID with '_'
-    if err != nil {
-        http.Error(w, "Failed to validate session", http.StatusInternalServerError)
-        return
-    }
-    isGuest := username == "guest"
-
-    rows, err := db.Query("SELECT content, username FROM comments JOIN users ON users.id = comments.user_id WHERE thread_id = ?", threadID)
-    if err != nil {
+        log.Printf("Failed to fetch comments: %v", err)
         http.Error(w, "Failed to fetch comments", http.StatusInternalServerError)
         return
     }
@@ -277,23 +269,23 @@ func serveThread(w http.ResponseWriter, r *http.Request) {
     var comments []Comment
     for rows.Next() {
         var comment Comment
-        if err := rows.Scan(&comment.Content, &comment.Username); err != nil {
+        if err := rows.Scan(&comment.ID, &comment.Content, &comment.Username, &comment.Likes, &comment.Dislikes); err != nil {
+            log.Printf("Failed to read comment %v", err)
             http.Error(w, "Failed to read comment data", http.StatusInternalServerError)
             return
         }
         comments = append(comments, comment)
     }
 
+    // Render the thread page with all gathered data
     tmpl := template.Must(template.ParseFiles("templates/thread.html"))
     tmpl.Execute(w, map[string]interface{}{
         "Thread":     thread,
         "Username":   username,
         "Categories": categories,
         "Comments":   comments,
-        "IsGuest":    isGuest,
     })
 }
-
 
 
 func serveLogin(w http.ResponseWriter, r *http.Request) {
@@ -535,63 +527,27 @@ func handleCommentLikeDislike(w http.ResponseWriter, r *http.Request) {
     }
 
     commentID := r.FormValue("comment_id")
-    likeTypeParam := r.FormValue("like_type") // This should be either "1" for like or "-1" for dislike
-    likeType, err := strconv.Atoi(likeTypeParam)
-    if err != nil || (likeType != 1 && likeType != -1) {
+    likeType := r.FormValue("like_type")
+
+    var query string
+    if likeType == "1" {
+        query = "UPDATE comments SET likes = likes + 1 WHERE id = ?"
+    } else if likeType == "-1" {
+        query = "UPDATE comments SET dislikes = dislikes + 1 WHERE id = ?"
+    } else {
         http.Error(w, "Invalid like type", http.StatusBadRequest)
         return
     }
 
-    userID, err := getUserIDFromCookie(r)
-    if err != nil {
-        http.Error(w, "Authentication error", http.StatusUnauthorized)
-        return
-    }
-
-    // Start a transaction
-    tx, err := db.Begin()
-    if err != nil {
-        http.Error(w, "Database error", http.StatusInternalServerError)
-        return
-    }
-    defer tx.Rollback()
-
-    var existingType int
-    err = tx.QueryRow("SELECT like_type FROM comment_likes WHERE comment_id = ? AND user_id = ?", commentID, userID).Scan(&existingType)
-    if err != nil && err != sql.ErrNoRows {
-        http.Error(w, "Database error", http.StatusInternalServerError)
-        return
-    }
-
-    if existingType != 0 {
-        http.Error(w, "You have already reacted to this comment", http.StatusForbidden)
-        return
-    }
-
-    _, err = tx.Exec("INSERT INTO comment_likes (comment_id, user_id, like_type) VALUES (?, ?, ?)", commentID, userID, likeType)
-    if err != nil {
-        http.Error(w, "Failed to record reaction", http.StatusInternalServerError)
-        return
-    }
-
-    if likeType == 1 {
-        _, err = tx.Exec("UPDATE comments SET likes = likes + 1 WHERE id = ?", commentID)
-    } else {
-        _, err = tx.Exec("UPDATE comments SET dislikes = dislikes + 1 WHERE id = ?", commentID)
-    }
+    _, err := db.Exec(query, commentID)
     if err != nil {
         http.Error(w, "Failed to update comment", http.StatusInternalServerError)
         return
     }
 
-    err = tx.Commit()
-    if err != nil {
-        http.Error(w, "Failed to commit transaction", http.StatusInternalServerError)
-        return
-    }
-
-    http.Redirect(w, r, "/thread?id="+r.FormValue("thread_id"), http.StatusSeeOther)
+    http.Redirect(w, r, "/thread?id="+r.URL.Query().Get("thread_id"), http.StatusSeeOther)
 }
+
 
 func executeQuery(query string, args ...interface{}) (sql.Result, error) {
 	return db.Exec(query, args...)
