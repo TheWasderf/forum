@@ -1,0 +1,34 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Profile</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <h1>User Profile</h1>
+    <p>Welcome, {{.Username}}!</p>
+
+{{if not .IsGuest}}
+<form method="post" action="/create-thread">
+    <input type="text" name="title" placeholder="Thread Title" required>
+    <textarea name="description" placeholder="Thread Description" required></textarea>
+    <select name="categories" multiple required>
+        <option value="1">Technology</option>
+        <option value="2">Health</option>
+        <option value="3">Science</option>
+        <!-- Add other categories as needed -->
+    </select>
+    <button type="submit">Create Thread</button>
+</form>
+{{end}}
+<h2>Threads</h2>
+<ul>
+    {{range .Threads}}
+    <li><a href="/thread?id={{.ID}}">{{.Title}}</a> - {{.Description}}</li>
+    {{end}}
+</ul>
+    <a href="/logout">Logout</a>
+</body>
+</html>
