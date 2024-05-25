@@ -1,5 +1,5 @@
 //// WILL  DO ////
--- filtreleme eklenecek --
--- kullaniciler arasi iletisim eklenecek --
--- dockerize eklenecek --
+-- filtreleme eklenecek --<br />
+-- kullaniciler arasi iletisim eklenecek --<br />
+-- dockerize eklenecek --<br />
 -- yeni konular ustten bastirilicak --
