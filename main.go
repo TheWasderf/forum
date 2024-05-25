@@ -375,6 +375,7 @@ func serveRegister(w http.ResponseWriter, r *http.Request) {
 
 
 func handleLikeDislike(w http.ResponseWriter, r *http.Request) {
+    
     if r.Method != http.MethodPost {
         http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
         return
@@ -391,6 +392,12 @@ func handleLikeDislike(w http.ResponseWriter, r *http.Request) {
     userID, err := getUserIDFromCookie(r)
     if err != nil {
         http.Error(w, "Authentication error", http.StatusUnauthorized)
+        return
+    }
+
+    if userID < 1000 {
+        // If there's an error or the user is a guest, deny access
+        http.Error(w, "Unauthorized access", http.StatusUnauthorized)
         return
     }
 
@@ -521,9 +528,16 @@ func serveComment(w http.ResponseWriter, r *http.Request) {
 
 
 func handleCommentLikeDislike(w http.ResponseWriter, r *http.Request) {
+    
     commentID := r.FormValue("comment_id")
     userID := r.FormValue("user_id") // Ensure you are capturing the user ID correctly
     likeType := r.FormValue("like_type") // Should be '1' for like or '-1' for dislike
+
+    if userID == "" {
+        // If there's an error or the user is a guest, deny access
+        http.Error(w, "Unauthorized access", http.StatusUnauthorized)
+        return
+    }
 
     // Check if the user has already liked or disliked the comment
     var exists int
