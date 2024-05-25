@@ -1,18 +1,18 @@
 package main
 
 import (
-	"database/sql"
-	"html/template"
-	"log"
-	"net/http"
-  "github.com/dgrijalva/jwt-go"
+    "database/sql"
+    "html/template"
+    "log"
+    "net/http"
+    "github.com/dgrijalva/jwt-go"
 	"time"
-  "crypto/rand"
+    "crypto/rand"
 	"encoding/base64"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
-  "io/ioutil"
-  "fmt"
+    "io/ioutil"
+    "fmt"
     "strconv"
 )
 
@@ -27,8 +27,12 @@ type Thread struct {
     Dislikes    int
 }
 type Comment struct {
+    ID       int 
     Content  string
     Username string
+    Likes    int
+    Dislikes int
+    UserID   int
 }
 
 func initDB(dataSourceName string) (*sql.DB, error) {
@@ -291,6 +295,7 @@ func serveThread(w http.ResponseWriter, r *http.Request) {
 }
 
 
+
 func serveLogin(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		username := r.FormValue("username")
@@ -522,6 +527,7 @@ func serveComment(w http.ResponseWriter, r *http.Request) {
     }
 }
 
+
 func handleCommentLikeDislike(w http.ResponseWriter, r *http.Request) {
     if r.Method != "POST" {
         http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
@@ -529,7 +535,7 @@ func handleCommentLikeDislike(w http.ResponseWriter, r *http.Request) {
     }
 
     commentID := r.FormValue("comment_id")
-    likeTypeParam := r.FormValue("like_type")
+    likeTypeParam := r.FormValue("like_type") // This should be either "1" for like or "-1" for dislike
     likeType, err := strconv.Atoi(likeTypeParam)
     if err != nil || (likeType != 1 && likeType != -1) {
         http.Error(w, "Invalid like type", http.StatusBadRequest)
@@ -565,6 +571,16 @@ func handleCommentLikeDislike(w http.ResponseWriter, r *http.Request) {
     _, err = tx.Exec("INSERT INTO comment_likes (comment_id, user_id, like_type) VALUES (?, ?, ?)", commentID, userID, likeType)
     if err != nil {
         http.Error(w, "Failed to record reaction", http.StatusInternalServerError)
+        return
+    }
+
+    if likeType == 1 {
+        _, err = tx.Exec("UPDATE comments SET likes = likes + 1 WHERE id = ?", commentID)
+    } else {
+        _, err = tx.Exec("UPDATE comments SET dislikes = dislikes + 1 WHERE id = ?", commentID)
+    }
+    if err != nil {
+        http.Error(w, "Failed to update comment", http.StatusInternalServerError)
         return
     }
 

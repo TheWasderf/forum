@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS comments (
     content TEXT NOT NULL,
     user_id INTEGER NOT NULL,
     thread_id INTEGER NOT NULL,
+    likes INTEGER DEFAULT 0,
+    dislikes INTEGER DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (thread_id) REFERENCES threads(id)
 );
