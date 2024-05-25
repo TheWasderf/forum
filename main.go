@@ -521,32 +521,36 @@ func serveComment(w http.ResponseWriter, r *http.Request) {
 
 
 func handleCommentLikeDislike(w http.ResponseWriter, r *http.Request) {
-    if r.Method != "POST" {
-        http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-        return
-    }
-
     commentID := r.FormValue("comment_id")
-    likeType := r.FormValue("like_type")
+    userID := r.FormValue("user_id") // Ensure you are capturing the user ID correctly
+    likeType := r.FormValue("like_type") // Should be '1' for like or '-1' for dislike
 
-    var query string
-    if likeType == "1" {
-        query = "UPDATE comments SET likes = likes + 1 WHERE id = ?"
-    } else if likeType == "-1" {
-        query = "UPDATE comments SET dislikes = dislikes + 1 WHERE id = ?"
-    } else {
-        http.Error(w, "Invalid like type", http.StatusBadRequest)
+    // Check if the user has already liked or disliked the comment
+    var exists int
+    err := db.QueryRow("SELECT COUNT(*) FROM comment_likes WHERE comment_id = ? AND user_id = ?", commentID, userID).Scan(&exists)
+    if err != nil {
+        log.Printf("Error checking existing likes/dislikes: %v", err)
+        http.Error(w, "Database error", http.StatusInternalServerError)
         return
     }
 
-    _, err := db.Exec(query, commentID)
+    if exists > 0 {
+        // Update existing record
+        _, err = db.Exec("UPDATE comment_likes SET like_type = ? WHERE comment_id = ? AND user_id = ?", likeType, commentID, userID)
+    } else {
+        // Insert new record
+        _, err = db.Exec("INSERT INTO comment_likes (comment_id, user_id, like_type) VALUES (?, ?, ?)", commentID, userID, likeType)
+    }
+
     if err != nil {
+        log.Printf("Failed to update comment likes/dislikes: %v", err)
         http.Error(w, "Failed to update comment", http.StatusInternalServerError)
         return
     }
 
-    http.Redirect(w, r, "/thread?id="+r.URL.Query().Get("thread_id"), http.StatusSeeOther)
+    http.Redirect(w, r, "/thread?id="+r.FormValue("thread_id"), http.StatusSeeOther)
 }
+
 
 
 func executeQuery(query string, args ...interface{}) (sql.Result, error) {
