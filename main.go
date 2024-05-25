@@ -34,7 +34,7 @@ type Comment struct {
     Dislikes int
     UserID   int
 }
-
+// database load
 func initDB(dataSourceName string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite3", dataSourceName)
 	if err != nil {
@@ -72,17 +72,17 @@ func main() {
 	http.HandleFunc("/register", serveRegister)
 	http.HandleFunc("/index", serveIndex)
 	http.HandleFunc("/thread", serveThread)
-  http.HandleFunc("/logout", serveLogout)
-  http.HandleFunc("/login-guest", serveLoginGuest)
+    http.HandleFunc("/logout", serveLogout)
+    http.HandleFunc("/login-guest", serveLoginGuest)
 	http.HandleFunc("/create-thread", serveCreateThread)
-  http.HandleFunc("/like-dislike", handleLikeDislike)
+    http.HandleFunc("/like-dislike", handleLikeDislike)
 	http.HandleFunc("/comment", serveComment)
     http.HandleFunc("/comment-like-dislike", handleCommentLikeDislike)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
 	//log.Println("JWT Key:", base64.StdEncoding.EncodeToString(jwtKey))
 }
-
+//asagida k ve generate Random token olusturmak icin
 func generateJWT(username string) (string, error) {
     token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
         "username": username,
@@ -93,7 +93,6 @@ func generateJWT(username string) (string, error) {
     return tokenString, err
 }
 
-
 func generateRandomKey(length int) []byte {
 	key := make([]byte, length)
 	_, err := rand.Read(key)
@@ -102,7 +101,7 @@ func generateRandomKey(length int) []byte {
 	}
 	return key
 }
-
+// guest mi degil mi kontrolu icin asagidaki kullanilabilir
 func getUserIDByUsername(username string) (int, error) {
     var userID int
     err := db.QueryRow("SELECT id FROM users WHERE username = ?", username).Scan(&userID)
@@ -111,8 +110,7 @@ func getUserIDByUsername(username string) (int, error) {
     }
     return userID, nil
 }
-
-
+// guest icin ayri token olusturuyo
 func serveLoginGuest(w http.ResponseWriter, r *http.Request) {
     // Generate a guest JWT token
     tokenString, err := generateJWT("guest")
@@ -131,8 +129,8 @@ func serveLoginGuest(w http.ResponseWriter, r *http.Request) {
 
     http.Redirect(w, r, "/index", http.StatusSeeOther)
 }
-
-
+// isGuest kontrolu bununla da yapilabilir
+// getUserIDByUsername func ile belki birlestirilebilir
 func getUserFromSession(tokenString string) (string, int, error) {
     token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
         return jwtKey, nil
@@ -152,7 +150,7 @@ func getUserFromSession(tokenString string) (string, int, error) {
         return "", 0, err
     }
 }
-
+// /home goruntuleme icin
 func serveHome(w http.ResponseWriter, r *http.Request) {
     cookie, err := r.Cookie("session_token")
     if err == nil && cookie.Value != "" {
@@ -168,7 +166,7 @@ func serveHome(w http.ResponseWriter, r *http.Request) {
     tmpl := template.Must(template.ParseFiles("templates/home.html"))
     tmpl.Execute(w, nil)
 }
-
+// cookie uzerinden userId elde ediyo
 func getUserIDFromCookie(r *http.Request) (int, error) {
     cookie, err := r.Cookie("session_token")
     if err != nil {
@@ -180,7 +178,7 @@ func getUserIDFromCookie(r *http.Request) (int, error) {
     }
     return userID, nil
 }
-
+// /index goruntuleme
 func serveIndex(w http.ResponseWriter, r *http.Request) {
     cookie, err := r.Cookie("session_token")
     if err != nil {
@@ -216,7 +214,7 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         "Threads":  threads,
     })
 }
-
+// konu/topic goruntuleme (commentleri ile birlikte)
 func serveThread(w http.ResponseWriter, r *http.Request) {
     threadID := r.URL.Query().Get("id")
     if threadID == "" {
@@ -286,8 +284,7 @@ func serveThread(w http.ResponseWriter, r *http.Request) {
         "Comments":   comments,
     })
 }
-
-
+// /login sistemi
 func serveLogin(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		username := r.FormValue("username")
@@ -332,8 +329,7 @@ func serveLogin(w http.ResponseWriter, r *http.Request) {
 		tmpl.Execute(w, nil)
 	}
 }
-
-
+// logout sistemi
 func serveLogout(w http.ResponseWriter, r *http.Request) {
 	// Delete the session cookie
 	http.SetCookie(w, &http.Cookie{
@@ -346,7 +342,8 @@ func serveLogout(w http.ResponseWriter, r *http.Request) {
 	// Redirect to home page
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
-
+// register sistemi
+// ve hash ile sifreleme
 func serveRegister(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		username := r.FormValue("username")
@@ -372,8 +369,7 @@ func serveRegister(w http.ResponseWriter, r *http.Request) {
 		tmpl.Execute(w, nil)
 	}
 }
-
-
+// konu like-dislike ve error handling
 func handleLikeDislike(w http.ResponseWriter, r *http.Request) {
     
     if r.Method != http.MethodPost {
@@ -445,7 +441,7 @@ func handleLikeDislike(w http.ResponseWriter, r *http.Request) {
 
     http.Redirect(w, r, "/thread?id="+threadID, http.StatusSeeOther)
 }
-
+// konu olusturma
 func serveCreateThread(w http.ResponseWriter, r *http.Request) {
     if r.Method == "POST" {
         // Retrieve the session token from the cookie
@@ -499,8 +495,7 @@ func serveCreateThread(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
     }
 }
-
-
+// yorumlar kismi
 func serveComment(w http.ResponseWriter, r *http.Request) {
     if r.Method == "POST" {
         threadID := r.FormValue("thread_id")
@@ -525,8 +520,7 @@ func serveComment(w http.ResponseWriter, r *http.Request) {
         return
     }
 }
-
-
+// yorum like-dislike
 func handleCommentLikeDislike(w http.ResponseWriter, r *http.Request) {
     
     commentID := r.FormValue("comment_id")
@@ -565,8 +559,6 @@ func handleCommentLikeDislike(w http.ResponseWriter, r *http.Request) {
     http.Redirect(w, r, "/thread?id="+r.FormValue("thread_id"), http.StatusSeeOther)
 }
 
-
-
 func executeQuery(query string, args ...interface{}) (sql.Result, error) {
 	return db.Exec(query, args...)
 }
@@ -574,4 +566,3 @@ func executeQuery(query string, args ...interface{}) (sql.Result, error) {
 func queryRow(query string, args ...interface{}) *sql.Row {
 	return db.QueryRow(query, args...)
 }
-//
