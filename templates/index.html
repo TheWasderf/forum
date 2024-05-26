@@ -25,6 +25,24 @@
 <a href="/messages">Messages</a>
 {{end}}
 <h2>Threads</h2>
+<form action="/index" method="get">
+    <label for="category">Filter by Category:</label>
+    <select name="category" id="category">
+        <option value="">All Categories</option>
+        <option value="Technology">Technology</option>
+        <option value="Health">Health</option>
+        <option value="Science">Science</option>
+    </select>
+
+    <label for="likeType">Filter by Like/Dislike:</label>
+    <select name="likeType" id="likeType">
+        <option value="">All</option>
+        <option value="like">Liked</option>
+        <option value="dislike">Disliked</option>
+    </select>
+
+    <button type="submit">Apply Filters</button>
+</form>
 <ul>
     {{range .Threads}}
     <li><a href="/thread?id={{.ID}}">{{.Title}}</a> - {{.Description}}</li>
