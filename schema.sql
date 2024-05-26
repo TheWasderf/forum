@@ -62,3 +62,11 @@ CREATE TABLE IF NOT EXISTS thread_categories (
     FOREIGN KEY (thread_id) REFERENCES threads(id),
     FOREIGN KEY (category_id) REFERENCES categories(id)
 );
+
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL,
+    content TEXT NOT NULL,
+    recipient TEXT NOT NULL,
+    time DATETIME
+);

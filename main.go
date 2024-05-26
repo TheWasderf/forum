@@ -14,6 +14,7 @@ import (
     "io/ioutil"
     "fmt"
     "strconv"
+    "encoding/json"
 )
 
 var db *sql.DB
@@ -34,6 +35,14 @@ type Comment struct {
     Dislikes int
     UserID   int
 }
+type Message struct {
+    ID        int       `json:"id"`
+    Username  string    `json:"username"` // Ensure field names are correctly capitalized for external visibility
+    Recipient string    `json:"recipient"`
+    Content   string    `json:"content"`
+    Time      time.Time `json:"time"`
+}
+
 // database load
 func initDB(dataSourceName string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite3", dataSourceName)
@@ -61,13 +70,14 @@ func main() {
   log.Println("JWT Key:", base64.StdEncoding.EncodeToString(jwtKey))
 
 	var err error
-  db, err = initDB("./forum.db")
-  if err != nil {
-      log.Fatalf("Error initializing database: %v", err)
-  }
-  defer db.Close()
-
+    db, err = initDB("./forum.db")
+    if err != nil {
+        log.Fatalf("Error initializing database: %v", err)
+    }
+    defer db.Close()
+    
 	http.HandleFunc("/", serveHome)
+    http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	http.HandleFunc("/login", serveLogin)
 	http.HandleFunc("/register", serveRegister)
 	http.HandleFunc("/index", serveIndex)
@@ -77,11 +87,87 @@ func main() {
 	http.HandleFunc("/create-thread", serveCreateThread)
     http.HandleFunc("/like-dislike", handleLikeDislike)
 	http.HandleFunc("/comment", serveComment)
+        // Set up routes for CHAT
+        http.HandleFunc("/messages", serveMessages) // Ensure serveMessages is defined somewhere
+        http.HandleFunc("/api/messages", func(w http.ResponseWriter, r *http.Request) {
+            messageHandler(db)(w, r) // Correctly pass the http.ResponseWriter, *http.Request, and *sql.DB
+        }) // API endpoint for handling messages
+        // Handler to get current user's username
+        http.HandleFunc("/api/get-current-user", func(w http.ResponseWriter, r *http.Request) {
+        // Retrieve the session token from the cookie
+        cookie, err := r.Cookie("session_token")
+        if err != nil {
+            http.Error(w, "Session token not found", http.StatusUnauthorized)
+            return
+        }
+        tokenString := cookie.Value
+    
+        // Use the existing function to get user details from the session token
+        username, _, err := getUserFromSession(tokenString)
+        if err != nil {
+            http.Error(w, "Error getting user details: "+err.Error(), http.StatusInternalServerError)
+            return
+        }
+    
+        // Return the username as JSON
+        json.NewEncoder(w).Encode(map[string]string{"username": username})
+        })
+        //chat ended
     http.HandleFunc("/comment-like-dislike", handleCommentLikeDislike)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
 	//log.Println("JWT Key:", base64.StdEncoding.EncodeToString(jwtKey))
 }
+//chat only asagidaki
+// serveMessages serves the messages.html template
+var tmpl = template.Must(template.ParseFiles("templates/messages.html"))
+
+func serveMessages(w http.ResponseWriter, r *http.Request) {
+    // Retrieve the session token from the cookie
+    cookie, err := r.Cookie("session_token")
+    if err != nil {
+        http.Error(w, "Session token not found", http.StatusUnauthorized)
+        return
+    }
+    tokenString := cookie.Value
+
+    // Use the existing function to get user details from the session token
+    username, userID, err := getUserFromSession(tokenString)
+    if err != nil {
+        http.Error(w, "Error getting user details: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    // Prepare user details for the template
+    userDetails := map[string]interface{}{
+        "Username": username,
+        "UserID":   userID,
+    }
+
+    // Execute the template with the user details
+    err = tmpl.Execute(w, userDetails)
+    if err != nil {
+        http.Error(w, "Error loading template: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+}
+//chat done
+// CHAT ICIN MESHGUR GET CURRENT USER:
+func getCurrentUser(r *http.Request) (string, error) {
+    cookie, err := r.Cookie("session_token")
+    if err != nil {
+        return "", err
+    }
+    
+    tokenString := cookie.Value
+    username, _, err := getUserFromSession(tokenString)
+    if err != nil {
+        return "", err
+    }
+    
+    return username, nil
+}
+// DONE DONE DONE
 //asagida k ve generate Random token olusturmak icin
 func generateJWT(username string) (string, error) {
     token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -391,7 +477,13 @@ func handleLikeDislike(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    if userID < 1000 {
+    username, err := getCurrentUser(r)
+    if err != nil {
+        // Handle error, maybe log it
+        http.Error(w, "Failed to get current user: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+    if username == "guest" {
         // If there's an error or the user is a guest, deny access
         http.Error(w, "Unauthorized access", http.StatusUnauthorized)
         return
@@ -527,7 +619,13 @@ func handleCommentLikeDislike(w http.ResponseWriter, r *http.Request) {
     userID := r.FormValue("user_id") // Ensure you are capturing the user ID correctly
     likeType := r.FormValue("like_type") // Should be '1' for like or '-1' for dislike
 
-    if userID == "" {
+    username, err := getCurrentUser(r)
+    if err != nil {
+        // Handle error, maybe log it
+        http.Error(w, "Failed to get current user: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+    if username == "guest" {
         // If there's an error or the user is a guest, deny access
         http.Error(w, "Unauthorized access", http.StatusUnauthorized)
         return
@@ -535,7 +633,7 @@ func handleCommentLikeDislike(w http.ResponseWriter, r *http.Request) {
 
     // Check if the user has already liked or disliked the comment
     var exists int
-    err := db.QueryRow("SELECT COUNT(*) FROM comment_likes WHERE comment_id = ? AND user_id = ?", commentID, userID).Scan(&exists)
+    err = db.QueryRow("SELECT COUNT(*) FROM comment_likes WHERE comment_id = ? AND user_id = ?", commentID, userID).Scan(&exists)
     if err != nil {
         log.Printf("Error checking existing likes/dislikes: %v", err)
         http.Error(w, "Database error", http.StatusInternalServerError)
