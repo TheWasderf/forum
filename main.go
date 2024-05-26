@@ -299,8 +299,9 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         whereClauses = append(whereClauses, "c.name = ?")
         queryParams = append(queryParams, categoryFilter)
     }
-
-    if likeType != "" {
+    // bu kisma calisilmasi -- fikir yurutulmesi
+    // ve mantigini ogrenip -- kendimizi gelistirmemiz lazim
+    if likeType == "like" {
         likeValue := 1
         if likeType == "dislike" {
             likeValue = -1
