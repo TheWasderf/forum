@@ -267,20 +267,18 @@ func getUserIDFromCookie(r *http.Request) (int, error) {
 }
 // /index goruntuleme
 func serveIndex(w http.ResponseWriter, r *http.Request) {
+    // Attempt to retrieve the session token and username
+    var username string
     cookie, err := r.Cookie("session_token")
-    if err != nil {
-        http.Redirect(w, r, "/login", http.StatusSeeOther)
-        return
-    }
-    // ASAGIDAKI SATIR username, _, err SEKLINDE IDI
-    // FILTERING ICIN _ YERINE userID KULLANILDI
-    username, userID, err := getUserFromSession(cookie.Value) // Updated to use getUserFromSession
-    if err != nil {
-        http.Error(w, "Invalid session", http.StatusUnauthorized)
-        return
+    if err == nil {
+        username, _, err = getUserFromSession(cookie.Value)
+        if err != nil {
+            username = "Guest" // Default to "Guest" if session is invalid
+        }
+    } else {
+        username = "Guest" // Treat as "Guest" if no cookie is found
     }
 
-    /// FOR FILTERING
     categoryFilter := r.URL.Query().Get("category")
     likeType := r.URL.Query().Get("likeType") // "like" or "dislike"
 
@@ -295,29 +293,31 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
 
     whereClauses := []string{}
 
+    // Filter by category if specified
     if categoryFilter != "" {
         whereClauses = append(whereClauses, "c.name = ?")
         queryParams = append(queryParams, categoryFilter)
     }
-    // bu kisma calisilmasi -- fikir yurutulmesi
-    // ve mantigini ogrenip -- kendimizi gelistirmemiz lazim
-    if likeType == "like" {
-        likeValue := 1
-        if likeType == "dislike" {
+
+    // Filter by like or dislike if specified
+    if likeType != "" {
+        likeValue := 0
+        if likeType == "like" {
+            likeValue = 1
+        } else if likeType == "dislike" {
             likeValue = -1
         }
-        whereClauses = append(whereClauses, "EXISTS (SELECT 1 FROM thread_likes tl WHERE tl.thread_id = t.id AND tl.user_id = ? AND tl.like_type = ?)")
-        queryParams = append(queryParams, userID, likeValue)
+        whereClauses = append(whereClauses, "EXISTS (SELECT 1 FROM thread_likes tl WHERE tl.thread_id = t.id AND tl.like_type = ?)")
+        queryParams = append(queryParams, likeValue)
     }
 
+    // Construct the final query with all applicable where clauses
     if len(whereClauses) > 0 {
         baseQuery += " WHERE " + strings.Join(whereClauses, " AND ")
     }
-    rows, err = db.Query(baseQuery, queryParams...)
-    // FOR FILTERING ENDS
 
-    // asagida ki rows, err yerine ustteki kullanildi filtre icin
-    //rows, err := db.Query("SELECT id, title, description FROM threads")
+    // Execute the query with all parameters
+    rows, err = db.Query(baseQuery, queryParams...)
     if err != nil {
         http.Error(w, "Failed to fetch threads", http.StatusInternalServerError)
         return
@@ -334,12 +334,14 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         threads = append(threads, t)
     }
 
+    // Render the page with the filtered threads and username
     tmpl := template.Must(template.ParseFiles("templates/index.html"))
     tmpl.Execute(w, map[string]interface{}{
         "Username": username,
-        "Threads":  threads,
+        "Threads": threads,
     })
 }
+
 // konu/topic goruntuleme (commentleri ile birlikte)
 func serveThread(w http.ResponseWriter, r *http.Request) {
     threadID := r.URL.Query().Get("id")
