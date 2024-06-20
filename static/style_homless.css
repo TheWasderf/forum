@@ -1,64 +1,79 @@
-/* style_homless.css */
-
-/* Set the background image */
 body {
-    background-image: url('R.jpeg');
-    background-size: cover;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    margin: 0;
-    padding: 0;
+    background-image: url('R.jpeg'); /* Resminizin URL'si */
+    background-size: cover; /* Resmi tüm arka plana yay */
+    background-repeat: no-repeat; /* Resmin tekrarlanmasını önle */
+    background-attachment: fixed; /* Arka plan resminin kaydırma ile sabit kalmasını sağla */
+}
+
+h1 {
+    background-color: whitesmoke; /* Yazının arka plan rengi */
+    color:#007bff; /* Yazı rengi */
+    padding: 10px 0; /* Üst ve alttan boşluk */
+    width: fit-content; /* İçeriğe göre genişlik */
+    margin: auto; /* Otomatik marj ile ortala */
+    border-radius: 10px; /* Kenarları yuvarlak yap */
+    margin-top: 150px;
+}
+
+nav {
+    background-color: whitesmoke;
+    border-radius: 10px;
+    color: whitesmoke;
+    padding: 20px;
+    text-align: center;
+    width: 200px; /* Kare şekli için genişlik */
+    height: 200px; /* Kare şekli için yükseklik */
+    margin-top: 50px; /*nav bölümü sayfanın üstünden 50 piksel aşağıda yer alacak*/
+    margin-left: 605px;
+    margin-top: 50px;
+
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
 }
 
-/* Style the heading */
-h1 {
-    background-color: whitesmoke;
-    color: #007bff;
-    padding: 30px;
+nav ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0; /* İç içe elemanların ortalanması için */
+}
+
+nav ul li {
+    display: inline-block; /* Bağlantıları yan yana getirir */
+    margin: 0 10px; /* Bağlantılar arasında boşluk bırakır */
+}
+
+nav ul li a {
+    background-color: #007bff;
     border-radius: 10px;
-    margin-top: -300px;
-    margin-left: 50px;
+    color: whitesmoke;
+    text-decoration: none;
+    font-weight: bold;
+    padding: 5px 10px;
 }
 
-/* Style the form container */
+/* 'Browse as Guest' butonunu ayrı bir satıra almak için */
 form {
-    background-color: whitesmoke;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    width: 300px;
-    margin-left: -235px;
+    margin-top: 20px; /* Üstteki bağlantılardan boşluk bırakır */
 }
 
-/* Style form labels and input fields */
-label {
-    display: block;
-    margin-top: 10px;
-}
 
-input[type="text"],
-input[type="password"] {
-    width: calc(100% - 20px);
-    padding: 10px;
-    margin-top: 5px;
+nav ul li a:hover,
+nav ul li a:focus {
+    background-color: #007bff;
     border-radius: 5px;
-    border: 1px solid #ddd;
 }
 
-/* Style the submit button */
 button {
+    border-radius: 10px;
     background-color: #28a745;
     color: white;
     border: none;
     padding: 10px 20px;
     text-align: center;
     text-decoration: none;
-    display: block;
-    width: 100%;
+    display: inline-block;
+    font-size: 16px;
     margin-top: 20px;
     cursor: pointer;
 }
