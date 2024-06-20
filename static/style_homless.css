@@ -1,8 +1,6 @@
 body {
     background-image: url('R.jpeg'); /* Resminizin URL'si */
     background-size: cover; /* Resmi tüm arka plana yay */
-    background-repeat: no-repeat; /* Resmin tekrarlanmasını önle */
-    background-attachment: fixed; /* Arka plan resminin kaydırma ile sabit kalmasını sağla */
 }
 
 h1 {
@@ -18,32 +16,26 @@ h1 {
 nav {
     background-color: whitesmoke;
     border-radius: 10px;
-    color: whitesmoke;
-    padding: 20px;
     text-align: center;
     width: 200px; /* Kare şekli için genişlik */
     height: 200px; /* Kare şekli için yükseklik */
-    margin-top: 50px; /*nav bölümü sayfanın üstünden 50 piksel aşağıda yer alacak*/
-    margin-left: 605px;
-    margin-top: 50px;
-
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-nav ul {
+nav ul { /* beyaz kutu yerleştirme */
     list-style-type: none;
     padding: 0;
     margin: 0; /* İç içe elemanların ortalanması için */
 }
 
-nav ul li {
+nav ul li { /* login register yerleri */
     display: inline-block; /* Bağlantıları yan yana getirir */
     margin: 0 10px; /* Bağlantılar arasında boşluk bırakır */
 }
 
-nav ul li a {
+nav ul li a { /* log reg yazı kutu*/
     background-color: #007bff;
     border-radius: 10px;
     color: whitesmoke;
