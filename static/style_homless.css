@@ -1,0 +1,69 @@
+/* style_homless.css */
+
+/* Set the background image */
+body {
+    background-image: url('R.jpeg');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* Style the heading */
+h1 {
+    background-color: whitesmoke;
+    color: #007bff;
+    padding: 30px;
+    border-radius: 10px;
+    margin-top: -300px;
+    margin-left: 50px;
+}
+
+/* Style the form container */
+form {
+    background-color: whitesmoke;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 300px;
+    margin-left: -235px;
+}
+
+/* Style form labels and input fields */
+label {
+    display: block;
+    margin-top: 10px;
+}
+
+input[type="text"],
+input[type="password"] {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin-top: 5px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+/* Style the submit button */
+button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: block;
+    width: 100%;
+    margin-top: 20px;
+    cursor: pointer;
+}
+
+button:hover,
+button:focus {
+    background-color: #218838;
+}
