@@ -1,21 +1,45 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Register</title>
-    <link rel="stylesheet" href="/static/style_register.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giriş Yap</title>
 </head>
 <body>
-    <h1>Register</h1>
-    <form method="post" action="/register">
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required><br>
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required><br>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required><br>
-        <button type="submit">Register</button>
-    </form>
+    <header>
+        <h1>Kayıt Ol</h1>
+    </header>
+    <section>
+        <form action="index.html">
+            <div>
+                <label>
+                    Email: 
+                    <br><br>
+                    <input type="email" placeholder="Bir Email Girin" required>
+                </label>
+            </div>
+            <br>
+            <div>
+                <label>
+                    Kullanıcı Adı: 
+                    <br><br>
+                    <input type="text" placeholder="Bir Kullanıcı Adı Girin" required>
+                </label>
+            </div>
+            <br>
+            <div>
+                <label>
+                    Şifre: 
+                    <br><br>
+                    <input type="password" placeholder="Bir Şifre Girin" required>
+                </label>
+            </div>
+            <br>
+            <input type="submit" value="Giriş Yapl">
+            <br>
+            <br>
+            <b>Zaten Hesabın Var Mı?</b> <a href="/login">Hemen Giriş Yap!</a>
+        </form>
+    </section>
 </body>
 </html>

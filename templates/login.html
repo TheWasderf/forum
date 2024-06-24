@@ -1,18 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>Login</title>
-    <link rel="stylesheet" href="/static/style_login.css">
-</head>
-<body>
-    <h1>Login</h1>
-    <form method="post" action="/login">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required><br>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required><br>
-        <button type="submit">Login</button>
-    </form>
-</body>
+    <link rel="stylesheet" href="/static/style_login.css" />
+    <title>Giriş Yap</title>
+  </head>
+  <body>
+    <header><h1>Giriş Yap</h1></header>
+    <section>
+      <form method="post" action="/login">
+        <div>
+          <nav>
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required placeholder="Lütfen Kullanıcı Adı Girin" />
+          </nav>
+        </div>
+        <br />
+        <br />
+        <div>
+          <nav>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required placeholder="Lütfen Şifre Girin" />
+          </nav>
+        </div>
+        <br />
+       <div>
+        <b>Okudum, Kabul Ediyorum</b>
+       <input type="checkbox">
+       </div>
+       <br>
+       <div>
+        <nav>
+            <button type="submit">Login</button>
+        </nav>
+       </div>
+      </form>
+      <br>
+      <b>Hesabın Yok Mu?</b> <a href="/register">Hemen Kayıt Ol!</a>
+    </section>
+  </body>
 </html>
